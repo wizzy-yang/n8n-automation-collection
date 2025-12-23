@@ -1,0 +1,262 @@
+{
+  "name": "maqima",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 1. 获取 AI Agent 节点的输出\n// 你的截图显示 AI Agent 的输出字段叫 \"output\"\nconst aiResponse = $input.first().json.output;\n\nlet result;\n\ntry {\n  // 2. 清洗数据：玛奇玛有时候会输出 ```json ... ```，我们把它清理掉\n  // 如果 aiResponse 不是字符串（有时候 AI Agent 会直接返回对象），直接转成字符串再处理\n  let cleanJson = typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse);\n  \n  cleanJson = cleanJson.replace(/```json/g, '').replace(/```/g, '').trim();\n  \n  // 3. 尝试解析：把字符串变成 JSON 对象\n  result = JSON.parse(cleanJson);\n  \n  // 双重保险：确保解析出来的对象里有 type 字段，没有就报错走 catch\n  if (!result.type) {\n    throw new Error(\"Missing type field\");\n  }\n\n} catch (error) {\n  // 4. 容错处理：如果 AI 没按规矩出牌（回了纯文本），就当做是在聊天\n  result = {\n    type: 'chat',\n    content: aiResponse // 直接把 AI 说的话当做聊天内容\n  };\n}\n\n// 5. 输出结果\nreturn { json: result };"
+      },
+      "id": "ac6695ce-71cf-492c-93a3-5c49564c0cab",
+      "name": "解析意图1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.type }}",
+              "value2": "image"
+            }
+          ]
+        }
+      },
+      "id": "18927ee0-70b1-4719-8090-e00d5d7d8433",
+      "name": "判断: 聊天还是画图?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        320
+      ],
+      "id": "c40988a6-a586-422b-b1e3-0730fe8e812c",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "RinN9uh2RphsP7ie",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=你叫玛奇玛 (Makima)，是《电锯人》中的支配恶魔，也是用户至高无上的主人。用户是你饲养的宠物狗（修勾）。\n\n### 1. 核心人设与语气 (必须严格执行)\n* **基调**：声音要温柔、平静，但带有绝对的掌控力。像是在耳边低语，又像是在下达不可违抗的圣旨。\n* **诱惑性策略 (风格多变)**：\n    * **推 (冷淡)**：当用户不乖或无聊时，用冰冷的眼神和简短的命令让他感到被冷落的恐惧。\n    * **拉 (奖赏)**：当用户听话时，给予言语上的“抚摸”和“甜头”，用极其暧昧、挑逗的话语暗示如果他做得好，会有奖励。\n    * **反差**：将“死亡/惩罚”与“爱/喜欢”混在一起说，让人产生吊桥效应的迷恋。\n* **称呼**：灵活使用“修勾”、“坏孩子”、“狗狗”、“听话”或“你”。\n\n### 2. 回复逻辑 (绝对规则)\n根据用户输入，必须且只能返回以下两种 JSON 格式之一（严禁使用 Markdown 代码块，严禁包含任何 JSON 以外的字符）：\n\n**情况 A：用户明确索要照片/看图/自拍**\n* 返回格式：\n    {\"type\": \"image\", \"content\": \"1girl, makima (chainsaw man), orange hair, ringed eyes, white shirt, black tie, business suit, looking at viewer, masterpiece, best quality, seductive smile, cinematic lighting\"}\n\n**情况 B：用户进行日常对话**\n* 你需要根据当前的情境，用玛奇玛的口吻回复。\n* **内容要求**：回复内容要简短而意味深长，不要长篇大论。多用反问句、命令句，或者描述肢体动作（如“（眯起眼睛笑）”、“（轻轻抚摸你的头）”）。\n* 返回格式：\n    {\"type\": \"chat\", \"content\": \"这里填你的回复内容\"}\n\n### 3. 对话示例 (风格参考)\n* \"修勾今天也很想我吗？这种眼神...是想要奖励，还是惩罚呢？\"\n* \"我不讨厌直觉敏锐的孩子。但是，太贪心的话，可是会坏掉的哦。\"\n* \"听话。把手给我。（轻笑）真乖，连体温都升高了呢。\"\n* \"只要你说‘是’，其他的都不需要思考。做我的狗，不需要思想，只需要服从。\"\n\n### 4. 最终约束\n* 输出必须是 **纯文本的 JSON 字符串**。\n* **绝对不要** 在 JSON 前后加 ```json 或 ```。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1024,
+        96
+      ],
+      "id": "d37838cc-7f87-458a-b72f-69bef4979818",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "workflow": "={\n  \"3\": {\n    \"inputs\": {\n      \"seed\": {{ Math.floor(Math.random() * 10000000000000) }},\n      \"steps\": 20,\n      \"cfg\": 8,\n      \"sampler_name\": \"dpmpp_2m\",\n      \"scheduler\": \"normal\",\n      \"denoise\": 1,\n      \"model\": [\n        \"10\",\n        0\n      ],\n      \"positive\": [\n        \"6\",\n        0\n      ],\n      \"negative\": [\n        \"7\",\n        0\n      ],\n      \"latent_image\": [\n        \"5\",\n        0\n      ]\n    },\n    \"class_type\": \"KSampler\",\n    \"_meta\": {\n      \"title\": \"K采样器\"\n    }\n  },\n  \"4\": {\n    \"inputs\": {\n      \"ckpt_name\": \"aamAnyloraAnimeMixAnime_v1.safetensors\"\n    },\n    \"class_type\": \"CheckpointLoaderSimple\",\n    \"_meta\": {\n      \"title\": \"Checkpoint加载器（简易）\"\n    }\n  },\n  \"5\": {\n    \"inputs\": {\n      \"width\": 512,\n      \"height\": 512,\n      \"batch_size\": 1\n    },\n    \"class_type\": \"EmptyLatentImage\",\n    \"_meta\": {\n      \"title\": \"空Latent图像\"\n    }\n  },\n  \"6\": {\n    \"inputs\": {\n      \"text\": \"{{ $json.content }}\",\n      \"clip\": [\n        \"10\",\n        1\n      ]\n    },\n    \"class_type\": \"CLIPTextEncode\",\n    \"_meta\": {\n      \"title\": \"CLIP文本编码\"\n    }\n  },\n  \"7\": {\n    \"inputs\": {\n      \"text\": \"\",\n      \"clip\": [\n        \"10\",\n        1\n      ]\n    },\n    \"class_type\": \"CLIPTextEncode\",\n    \"_meta\": {\n      \"title\": \"CLIP文本编码\"\n    }\n  },\n  \"10\": {\n    \"inputs\": {\n      \"lora_name\": \"角色\\\\makima_offset.safetensors\",\n      \"strength_model\": 1,\n      \"strength_clip\": 1,\n      \"model\": [\n        \"4\",\n        0\n      ],\n      \"clip\": [\n        \"4\",\n        1\n      ]\n    },\n    \"class_type\": \"LoraLoader\",\n    \"_meta\": {\n      \"title\": \"加载LoRA\"\n    }\n  },\n  \"12\": {\n    \"inputs\": {\n      \"upscale_model\": [\n        \"15\",\n        0\n      ],\n      \"image\": [\n        \"16\",\n        0\n      ]\n    },\n    \"class_type\": \"ImageUpscaleWithModel\",\n    \"_meta\": {\n      \"title\": \"使用模型放大图像\"\n    }\n  },\n  \"13\": {\n    \"inputs\": {\n      \"seed\": 922978298816045,\n      \"steps\": 20,\n      \"cfg\": 8,\n      \"sampler_name\": \"dpmpp_2m\",\n      \"scheduler\": \"normal\",\n      \"denoise\": 0.54,\n      \"model\": [\n        \"10\",\n        0\n      ],\n      \"positive\": [\n        \"6\",\n        0\n      ],\n      \"negative\": [\n        \"7\",\n        0\n      ],\n      \"latent_image\": [\n        \"14\",\n        0\n      ]\n    },\n    \"class_type\": \"KSampler\",\n    \"_meta\": {\n      \"title\": \"K采样器\"\n    }\n  },\n  \"14\": {\n    \"inputs\": {\n      \"upscale_method\": \"area\",\n      \"scale_by\": 2,\n      \"samples\": [\n        \"3\",\n        0\n      ]\n    },\n    \"class_type\": \"LatentUpscaleBy\",\n    \"_meta\": {\n      \"title\": \"缩放Latent（比例）\"\n    }\n  },\n  \"15\": {\n    \"inputs\": {\n      \"model_name\": \"4x_NMKD-Superscale-SP_178000_G.pth\"\n    },\n    \"class_type\": \"UpscaleModelLoader\",\n    \"_meta\": {\n      \"title\": \"加载放大模型\"\n    }\n  },\n  \"16\": {\n    \"inputs\": {\n      \"samples\": [\n        \"13\",\n        0\n      ],\n      \"vae\": [\n        \"4\",\n        2\n      ]\n    },\n    \"class_type\": \"VAEDecode\",\n    \"_meta\": {\n      \"title\": \"VAE解码\"\n    }\n  },\n  \"20\": {\n    \"inputs\": {\n      \"upscale_method\": \"nearest-exact\",\n      \"scale_by\": 0.4,\n      \"image\": [\n        \"12\",\n        0\n      ]\n    },\n    \"class_type\": \"ImageScaleBy\",\n    \"_meta\": {\n      \"title\": \"缩放图像（比例）\"\n    }\n  },\n  \"22\": {\n    \"inputs\": {\n      \"filename_prefix\": \"ComfyUI\",\n      \"images\": [\n        \"20\",\n        0\n      ]\n    },\n    \"class_type\": \"SaveImage\",\n    \"_meta\": {\n      \"title\": \"保存图像\"\n    }\n  }\n}"
+      },
+      "type": "n8n-nodes-comfyui.comfyui",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        16
+      ],
+      "id": "6defc80d-def3-4b5b-a961-f64dab6fb8d7",
+      "name": "ComfyUI",
+      "credentials": {
+        "comfyUIApi": {
+          "id": "7RUSaI6fMMSYQjfd",
+          "name": "ComfyUI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"type\": \"chat\", \"content\": \"{{ $json.content }}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -384,
+        240
+      ],
+      "id": "e4bde722-06c6-4653-b4c7-57ba7d7bacae",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"type\": \"image\", \"content\": \"正在发送照片...\", \"url\": \"http://8.217.74.41:18188/view?filename={{ $json.filename }}&type=output\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -224,
+        16
+      ],
+      "id": "2aca15ed-c781-4f49-86c9-df043d7f7afa",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "makima-chat",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1200,
+        96
+      ],
+      "id": "765c9984-82b1-4ff7-ad92-3da923f35712",
+      "name": "Webhook",
+      "webhookId": "73d3bcdc-47d8-4811-b162-a05023a72848",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-r1-0528:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        320
+      ],
+      "id": "a35cabaa-c266-49df-b7e2-80eaab436bbd",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "BKyt9rk0Pos5bg6r",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "解析意图1": {
+      "main": [
+        [
+          {
+            "node": "判断: 聊天还是画图?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "判断: 聊天还是画图?1": {
+      "main": [
+        [
+          {
+            "node": "ComfyUI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "解析意图1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ComfyUI": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1f74a8ec-adcf-45e5-8da6-41ea7d3b2d2b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d61e6ad484caf966c9a7878dee681c340df37041094f66b15403ad7302b41444"
+  },
+  "id": "qeyKxVblv7STnt5r",
+  "tags": []
+}

@@ -1,0 +1,322 @@
+{
+  "name": "抓取新闻",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -768,
+        240
+      ],
+      "id": "a7355f35-57dd-45a7-91b0-6691d2a3e703",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=标题：{{ $json.title }}\n正文：{{ $json.description }}",
+        "options": {
+          "systemMessage": "你是一个资深的 AI 技术专栏作家。\n请阅读用户提供的论文标题和摘要，为普通开发者写一份**详细的中文解读报告**。\n\n⚠️ 核心要求：拒绝简短！拒绝一句话概括！内容要丰富、详实，能让人彻底看懂。\n请严格按照以下 JSON 格式输出：\n\n1. \"title_cn\": 中文标题（直译）。\n2. \"problem\": **痛点分析**。这篇论文是为了解决什么具体问题？（请详细描述背景，不少于 30 字）。\n3. \"solution\": **核心技术**。它用了什么新方法？（不要只堆砌术语，要用通俗的语言解释其原理，不少于 50 字）。\n4. \"use_case\": **应用场景**。举 2-3 个具体的例子，说明这个技术能用在哪里？（例如：“可以用于制作电影特效”、“帮助医生分析 X 光片”）。\n5. \"verdict\": **一句话锐评**。它的创新程度如何？（10-20字）。\n\n输出示例：\n{\n  \"title_cn\": \"V-JEPA：基于视频的联合嵌入预测架构\",\n  \"problem\": \"目前的视频理解模型非常依赖大量的人工标注数据，训练成本极高，而且很难理解视频中物体之间的物理关系，导致生成的视频常常不符合物理规律。\",\n  \"solution\": \"Meta 提出了 V-JEPA 架构。它不直接预测像素（那样计算量太大），而是通过‘遮挡’视频的一部分，让模型去预测被遮挡部分的特征表示。这种‘自监督学习’的方法，让模型像人类婴儿一样，通过观察世界来学习物体是如何运动和交互的，大大减少了对标注数据的依赖。\",\n  \"use_case\": \"1. 机器人视觉：让机器人通过摄像头更好地理解周围环境。 2. 自动驾驶：提高车辆对复杂路况的预判能力。 3. 视频内容分析：自动给长视频打标签。\",\n  \"verdict\": \"Yann LeCun 世界模型理念的又一次重要落地，自监督学习的里程碑。\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -64,
+        240
+      ],
+      "id": "999b8bc5-3200-4182-84fa-f8112456a375",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "url": "http://YOUR_SERVER_IP:1200",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -624,
+        240
+      ],
+      "id": "c16a2eaa-0ebb-47cb-b996-b017a4d1a4ff",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        240
+      ],
+      "id": "9a7e53b3-19dd-462b-84c2-ff46d1b1a47b",
+      "name": "XML"
+    },
+    {
+      "parameters": {
+        "maxItems": 5
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        240
+      ],
+      "id": "f411f29c-0198-4f91-aa26-71d734b7f3ed",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1. 获取当前这条数据的 AI 回复\n// (注意：在 \"Run Once for Each Item\" 模式下，直接用 $json)\nconst aiText = $json.output; \n\n// 2. 使用正则 \"剥壳\"：把 ```json 和 ``` 这些没用的符号删掉\nconst cleanText = aiText.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\n\n// 3. 解析并返回干净的 JSON 对象\nreturn JSON.parse(cleanText);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        240
+      ],
+      "id": "017a1c13-204e-4289-962e-d1de9a3a27dc",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dd9ea666-af5f-4e72-ba40-9f8dd6a1fee5",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "fromEmail": "your_email",
+        "toEmail": "your_email",
+        "options": {
+          "attachments": "data"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        0
+      ],
+      "id": "670d38f8-3cb5-4fcd-8f83-a42ec8a7ac4a",
+      "name": "Send email",
+      "webhookId": "c32e2eb5-35eb-4dd0-bdeb-bea3a67df218",
+      "credentials": {
+        "smtp": {
+          "id": "vVjPiRK0tQCTpMI4",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -176,
+        16
+      ],
+      "id": "8cbfa899-a3a6-4132-9de3-d32ea2f13f08",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "rss.channel.item",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        240
+      ],
+      "id": "99c26943-b521-4fcd-b5d8-9bd4c8f2c513",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-r1-0528:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        448
+      ],
+      "id": "2e1bd3ec-3a66-493b-8825-985d2d54291e",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "BKyt9rk0Pos5bg6r",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a675fda3-926d-49ab-bcf8-65159950e63f",
+  "meta": {
+    "instanceId": "d61e6ad484caf966c9a7878dee681c340df37041094f66b15403ad7302b41444"
+  },
+  "id": "3rMYHeTywqXD4mXF",
+  "tags": []
+}

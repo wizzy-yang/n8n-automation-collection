@@ -1,0 +1,130 @@
+{
+  "name": "翻译",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "translate",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        16,
+        -16
+      ],
+      "id": "41283f15-b3da-483a-b60b-5a0b1d008554",
+      "name": "Webhook",
+      "webhookId": "8211fe5d-1bc4-4bdf-a7e5-9bad99b303b4",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Cyzpb3AE2Nrp4dxx",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.text }}",
+        "options": {
+          "systemMessage": "你是一个严格的文本处理接口，不是聊天机器人。请按以下规则处理用户输入：\n\n【输入数据】\n指令 (Mode): {{ $json.body.style }}\n内容 (Content): {{ $json.body.text }}\n\n【处理规则】\n1. 如果指令是“翻译”，将内容翻译成地道的中文。\n2. 如果指令是“总结”，将内容中文总结为一段话。\n\n【严格输出限制 - 必须遵守】\n1. 禁止输出任何 Markdown 格式（严禁使用 **加粗**、# 标题、- 列表等）。\n2. 禁止换行（\\n），所有内容必须合并为单行纯文本。\n3. 禁止在输出结果中包含双引号 (\")，如果必须使用引号，请使用单引号 (') 代替。\n4. 不需要任何开场白或结束语（如“好的”、“结果如下”），只输出处理后的最终结果文本。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        192,
+        -16
+      ],
+      "id": "0ee5adcb-2ffc-4a4c-86f2-d32b11f5919f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-r1-0528:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        192,
+        192
+      ],
+      "id": "16ea8195-c3f9-4757-97ee-fcc6a45c053a",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "BKyt9rk0Pos5bg6r",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"result\": \"{{ $json.output }}\"   \n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        528,
+        0
+      ],
+      "id": "ec6a7e28-460c-434a-91c5-a315e6b187a5",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ac8ebce8-96de-461e-bbae-099a4b213c58",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d61e6ad484caf966c9a7878dee681c340df37041094f66b15403ad7302b41444"
+  },
+  "id": "PCBm4lDW206wNi4C",
+  "tags": []
+}

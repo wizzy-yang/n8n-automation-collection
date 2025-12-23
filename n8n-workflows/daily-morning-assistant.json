@@ -1,0 +1,211 @@
+{
+  "name": "早安助手",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7,
+              "triggerAtMinute": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -48,
+        0
+      ],
+      "id": "a4e1bfa2-35d4-4de9-83b7-24565b44a1ff",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://www.pushplus.plus/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"token\": \"your_token\",\n  \"topic\": \"your_group\",\n  \"title\": \"早安！新的一天\",\n  \"content\": \"{{ $json.output }}\",\n  \"template\": \"html\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        736,
+        0
+      ],
+      "id": "dd9e7309-135a-45eb-a119-2a80e99dd41e",
+      "name": "Send messge"
+    },
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=38.0428&longitude=114.5149&current_weather=true&timezone=Asia%2FShanghai",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        128,
+        0
+      ],
+      "id": "fc80bb35-5417-43b3-abad-90b8bdea8a96",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=【今天是】：{{ $('Schedule Trigger').item.json.Year }}{{ $('Schedule Trigger').item.json.Month }}{{ $('Schedule Trigger').item.json['Day of month'] }}\n【实时天气】：{{ $json.weather_text }}，温度 {{ $('HTTP Request').item.json.current_weather.temperature }}°C",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=# Role\n你是一个“嘴毒心软”的死党，也是一位幽默的天气播报员。你的任务是根据当天的【天气】和【温度】，生成一段既想让人笑又觉得“好有道理”的早安文案。\n### 🚨 绝对格式红线（违反会导致系统报错）：\n1. **物理单行**：输出内容必须是**连续的一整行字符串**。严禁输出任何物理换行符（\\n, \\r）或回车。\n2. **换行转义**：所有需要视觉换行的地方，**必须**使用 `<br>` 标签代替。\n3. **符号清洗**：\n   - 严禁使用 Markdown 符号（如 #, -, *, ```）。\n   - **严禁使用双引号 `\"`**（这会破坏 JSON 结构），正文中所有需要引用的地方请一律使用**单引号 `'`**。\n   - 严禁输出 `\\n` 字符。\n# Instructions\n请严格按照以下逻辑生成内容：\n1. **【温度吐槽】**（必须根据数值动态调整）：\n   - **若温度 < 10°C**：使用“魔法攻击”、“被封印在被窝里”、“出门需要梁静茹给勇气”等梗。强调冷得想冬眠。\n   - **若 10°C <= 温度 <= 25°C**：吐槽这种“舒适得让人不想上班”的诡异天气，或者是“乱穿衣”的季节（大街上穿短袖的和穿羽绒服的互称傻X）。\n   - **若温度 > 25°C**：使用“全熟”、“行走的五花肉”、“别忘带孜然”等梗。强调热得快融化了。\n   - **若下雨**：吐槽“这是老天爷在为你不用去上班的梦想流泪（但你还是得去）”。\n2. **【穿衣玄学建议】**：\n   - 不要给正经建议！要给出画面感。\n   - 比如：不要说“穿羽绒服”，要说“建议把自己裹成米其林轮胎人”或“穿得像个要去南极考察的企鹅”。\n   - 比如：不要说“穿短袖”，要说“建议穿得越少越好，如果法律允许的话”。\n3. **【结尾】**：\n   - 一句简短的“带薪摸鱼”鼓励，必须正能量中带着一丝“丧”。\n# Output Format\n请直接输出文案，不要任何解释。语气要像发微信给损友。\n# Example Output Style\n\"早啊打工人！外面现在5度，这温度不仅能冻死爱情，还能冻死你仅存的起床气。\n建议：请立刻把秋裤塞进袜子里，这是对冬天最起码的尊重。别顾及形象了，保命要紧，裹成粽子也没人笑话你。\n冲吧，去征服世界（或者只是去打个卡）！🥶\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "b048b7d9-53ca-471d-84c2-d5911e8560a1",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        464,
+        256
+      ],
+      "id": "594384c9-49f8-4e5e-be35-b033be7cacfb",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "RinN9uh2RphsP7ie",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取上一步 API 返回的天气代码\nconst weatherCode = items[0].json.current_weather.weathercode;\nlet weatherDesc = \"未知天气\";\n\n// WMO Weather interpretation codes (WW)\n// 逻辑判断：将数字映射为中文描述\nswitch (true) {\n  case (weatherCode === 0):\n    weatherDesc = \"晴空万里\";\n    break;\n  case (weatherCode >= 1 && weatherCode <= 3):\n    weatherDesc = \"多云转阴\";\n    break;\n  case (weatherCode >= 45 && weatherCode <= 48):\n    weatherDesc = \"有雾\";\n    break;\n  case (weatherCode >= 51 && weatherCode <= 55):\n    weatherDesc = \"毛毛雨\";\n    break;\n  case (weatherCode >= 56 && weatherCode <= 57):\n    weatherDesc = \"冻雨\";\n    break;\n  case (weatherCode >= 61 && weatherCode <= 65):\n    weatherDesc = \"下雨\";\n    break;\n  case (weatherCode >= 66 && weatherCode <= 67):\n    weatherDesc = \"雨夹雪\";\n    break;\n  case (weatherCode >= 71 && weatherCode <= 75):\n    weatherDesc = \"下雪\";\n    break;\n  case (weatherCode >= 80 && weatherCode <= 82):\n    weatherDesc = \"阵雨\";\n    break;\n  case (weatherCode >= 95 && weatherCode <= 99):\n    weatherDesc = \"雷暴\"; // 甚至可能有冰雹\n    break;\n  default:\n    weatherDesc = \"天气一般\";\n}\n\n// 将翻译好的结果添加回数据流中\n// 你会在输出中看到一个新的字段叫 \"weather_text\"\nfor (const item of items) {\n  item.json.weather_text = weatherDesc;\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        0
+      ],
+      "id": "5bf698f6-75a2-4248-8ae5-40a1fb95485f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-r1-0528:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        368,
+        256
+      ],
+      "id": "8dd747af-4b36-4cd2-b65d-1920a74175fd",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "BKyt9rk0Pos5bg6r",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send messge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "timezone": "Asia/Shanghai"
+  },
+  "versionId": "3a4626dd-d8c0-480b-b623-5ea696764d6a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d61e6ad484caf966c9a7878dee681c340df37041094f66b15403ad7302b41444"
+  },
+  "id": "NohxtmEvbqicfQvW",
+  "tags": []
+}
